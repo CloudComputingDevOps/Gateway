@@ -56,11 +56,7 @@ export class UsersController {
 
   @Get('/findAll')
   @UseGuards(AuthGuard, PositionGuard)
-  @Positions(
-    PositionId.HumanTalentAssistant,
-    PositionId.HumanTalentLead,
-    PositionId.RecruitmentCoordinator,
-  )
+  @Positions(PositionId.HumanTalentAssistant, PositionId.HumanTalentLead)
   @ApiOperation({ summary: 'Obtener todos los empleados' })
   @ApiResponse({ status: 200, description: 'Lista de empleados.' })
   findAll() {
