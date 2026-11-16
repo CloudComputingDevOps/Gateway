@@ -1,23 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Inject, ParseIntPipe, Query, Put, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiBody, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Inject, ParseIntPipe, Query, Put } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiParam, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { catchError } from 'rxjs';
 import { NATS_SERVICE } from '@/src/config';
 import { CreatePositionDto, PositionPaginationDto, UpdatePositionDto } from './dto';
-import { AuthGuard, PositionGuard } from '@/src/guards';
-import { Positions } from '@/src/decorators';
-import { PositionId } from '@/src/guards/enum/position-id.enum';
 
 @ApiTags('Positions')
-@ApiBearerAuth()
 @Controller('administrative-data/positions')
 export class PositionsController {
   constructor(
     @Inject(NATS_SERVICE) private readonly client: ClientProxy,
   ) {}
 
-  @UseGuards(AuthGuard, PositionGuard)
-  @Positions(PositionId.HumanTalentAssistant, PositionId.HumanTalentLead)
   @Post('create-position')
   @ApiOperation({ summary: 'Crear un nuevo cargo' })
   @ApiBody({ type: CreatePositionDto })
@@ -46,8 +40,6 @@ export class PositionsController {
       .pipe(catchError((err) => { throw new RpcException(err); }));
   }
 
-  @UseGuards(AuthGuard, PositionGuard)
-  @Positions(PositionId.HumanTalentAssistant, PositionId.HumanTalentLead)
   @Patch('update-position/:id')
   @ApiOperation({ summary: 'Actualizar un cargo por ID' })
   @ApiParam({ name: 'id', description: 'ID del cargo', example: 1 })
@@ -60,8 +52,6 @@ export class PositionsController {
   }
 
   @Delete('delete-position/:id')
-  @UseGuards(AuthGuard, PositionGuard)
-  @Positions(PositionId.HumanTalentAssistant, PositionId.HumanTalentLead)
   @ApiOperation({ summary: 'Eliminar un cargo por ID' })
   @ApiParam({ name: 'id', description: 'ID del cargo', example: 1 })
   @ApiResponse({ status: 200, description: 'Cargo eliminado exitosamente.' })
@@ -79,8 +69,6 @@ export class PositionsController {
       .pipe(catchError((err) => { throw new RpcException(err); }));
   }
 
-  @UseGuards(AuthGuard, PositionGuard)
-  @Positions(PositionId.HumanTalentAssistant, PositionId.HumanTalentLead)
   @Put('remove-father/:id')
   @ApiOperation({ summary: 'Eliminar la jerarquía padre de un cargo' })
   @ApiParam({ name: 'id', description: 'ID del cargo al que se le elimina el padre', example: 4 })

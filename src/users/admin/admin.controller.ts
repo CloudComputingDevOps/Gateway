@@ -5,7 +5,6 @@ import {
   Body,
   Param,
   Inject,
-  UseGuards,
   ParseIntPipe
 } from '@nestjs/common';
 import {
@@ -14,16 +13,12 @@ import {
   ApiParam,
   ApiBody,
   ApiResponse,
-  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { NATS_SERVICE } from '@/src/config';
 import { ClientProxy } from '@nestjs/microservices';
 import { CreateAdminDto } from './dto';
-import { AuthGuard, RoleGuard } from '@/src/guards';
 
 @ApiTags('Admin')
-@ApiBearerAuth()
-@UseGuards(AuthGuard, RoleGuard)
 @Controller('admin')
 export class AdminController {
   constructor(@Inject(NATS_SERVICE) private readonly client: ClientProxy) {}

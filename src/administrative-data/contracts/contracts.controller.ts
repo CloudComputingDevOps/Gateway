@@ -1,25 +1,18 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Inject, ParseIntPipe, UseInterceptors, UploadedFile, BadRequestException, Query, UseGuards, ForbiddenException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiBody, ApiResponse, ApiConsumes, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Inject, ParseIntPipe, UseInterceptors, UploadedFile, BadRequestException, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiParam, ApiBody, ApiResponse, ApiConsumes } from '@nestjs/swagger';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { catchError, firstValueFrom } from 'rxjs';
 import { NATS_SERVICE } from '@/src/config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ContractPaginationDto, CreateContractDto, RenewContractDto, UpdateContractDto } from './dto';
-import { AuthGuard, PositionGuard } from '@/src/guards';
-import { AuthUser } from '@/src/decorators';
-import { Positions } from '@/src/decorators';
-import { PositionId } from '@/src/guards/enum/position-id.enum';
 
 @ApiTags('Contracts')
-@ApiBearerAuth()
 @Controller('administrative-data/contracts')
 export class ContractsController {
   constructor(
     @Inject(NATS_SERVICE) private readonly client: ClientProxy,
   ) {}
 
-  @UseGuards(AuthGuard, PositionGuard)
-  @Positions(PositionId.HumanTalentAssistant, PositionId.HumanTalentLead)
   @Post('create-contract')
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({ summary: 'Crear un nuevo contrato (requiere archivo PDF)' })
@@ -43,7 +36,6 @@ export class ContractsController {
   })
   @ApiResponse({ status: 201, description: 'Contrato creado exitosamente.' })
   @ApiResponse({ status: 400, description: 'Archivo requerido o datos inválidos.' })
-  @ApiResponse({ status: 403, description: 'Sin permisos para crear contratos.' })
   async createContract(@UploadedFile() file: Express.Multer.File, @Body() createContractDto: CreateContractDto) {
     if (!file) {
       throw new BadRequestException('File is required');
@@ -66,8 +58,6 @@ export class ContractsController {
   }
 
   @Get('find-all-contracts')
-  @UseGuards(AuthGuard, PositionGuard)
-  @Positions(PositionId.HumanTalentAssistant, PositionId.HumanTalentLead)
   @ApiOperation({ summary: 'Obtener todos los contratos (paginado)' })
   @ApiResponse({ status: 200, description: 'Lista de contratos.' })
   findAll(@Query() paginationDto: ContractPaginationDto) {
@@ -77,16 +67,12 @@ export class ContractsController {
   }
 
   @Get('find-contract/:id')
-  @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Obtener un contrato por ID' })
   @ApiParam({ name: 'id', description: 'ID del contrato', example: 1 })
   @ApiResponse({ status: 200, description: 'Contrato encontrado.' })
   @ApiResponse({ status: 404, description: 'Contrato no encontrado.' })
   async findOne(
     @Param('id', ParseIntPipe) id: number,
-    @AuthUser('employeeId') employeeId: number,
-    @AuthUser('position') position: number,
-    @AuthUser('isAdmin') isAdmin: boolean,
   ) {
     const contract = await firstValueFrom(
       this.client.send({ cmd: 'findOneContract' }, id).pipe(
@@ -94,13 +80,10 @@ export class ContractsController {
       ),
     );
 
-    await this.ensureEmployeeAccess(contract.id_employee, employeeId, position, isAdmin);
     return contract;
   }
 
   @Get('stats')
-  @UseGuards(AuthGuard, PositionGuard)
-  @Positions(PositionId.HumanTalentAssistant, PositionId.HumanTalentLead)
   @ApiOperation({ summary: 'Obtener estadísticas de contratos' })
   @ApiResponse({ status: 200, description: 'Estadísticas de contratos.' })
   getStats() {
@@ -109,8 +92,6 @@ export class ContractsController {
     );
   }
 
-  @UseGuards(AuthGuard, PositionGuard)
-  @Positions(PositionId.HumanTalentAssistant, PositionId.HumanTalentLead)
   @Patch('update-contract/:id')
   @ApiOperation({ summary: 'Actualizar un contrato por ID' })
   @ApiParam({ name: 'id', description: 'ID del contrato', example: 1 })
@@ -123,8 +104,6 @@ export class ContractsController {
     );
   }
 
-  @UseGuards(AuthGuard, PositionGuard)
-  @Positions(PositionId.HumanTalentAssistant, PositionId.HumanTalentLead)
   @Delete('delete-contract/:id')
   @ApiOperation({ summary: 'Eliminar un contrato por ID' })
   @ApiParam({ name: 'id', description: 'ID del contrato', example: 1 })
@@ -136,8 +115,6 @@ export class ContractsController {
     );
   }
 
-  @UseGuards(AuthGuard, PositionGuard)
-  @Positions(PositionId.HumanTalentAssistant, PositionId.HumanTalentLead)
   @Patch('renew-contract/:id')
   @ApiOperation({ summary: 'Renovar un contrato por ID' })
   @ApiParam({ name: 'id', description: 'ID del contrato a renovar', example: 1 })
@@ -151,7 +128,6 @@ export class ContractsController {
   }
 
   @Get('find-contracts-by-employee/:id')
-  @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Obtener todos los contratos de un empleado' })
   @ApiParam({ name: 'id', description: 'ID del empleado', example: 10 })
   @ApiResponse({ status: 200, description: 'Lista de contratos del empleado.' })
@@ -159,34 +135,10 @@ export class ContractsController {
   async findByEmployee(
     @Param('id', ParseIntPipe) id: number,
     @Query() paginationDto: ContractPaginationDto,
-    @AuthUser('employeeId') employeeId: number,
-    @AuthUser('position') position: number,
-    @AuthUser('isAdmin') isAdmin: boolean,
   ) {
-    await this.ensureEmployeeAccess(id, employeeId, position, isAdmin);
     return this.client.send({ cmd: 'findContractsByEmployee' }, { id_employee: id, paginationDto }).pipe(
       catchError((err) => { throw new RpcException(err); }),
     );
   }
 
-  private async ensureEmployeeAccess(
-    targetEmployeeId: number,
-    requesterEmployeeId: number,
-    requesterPosition: number,
-    requesterIsAdmin: boolean,
-  ) {
-    if (requesterIsAdmin || this.isHumanTalent(requesterPosition) || targetEmployeeId === requesterEmployeeId) {
-      return;
-    }
-
-    const employee = await firstValueFrom(this.client.send({ cmd: 'findUserById' }, targetEmployeeId));
-
-    if (employee.id_manager !== requesterEmployeeId) {
-      throw new ForbiddenException('Insufficient employee access');
-    }
-  }
-
-  private isHumanTalent(position: number): boolean {
-    return [PositionId.HumanTalentAssistant, PositionId.HumanTalentLead].includes(position);
-  }
 }
