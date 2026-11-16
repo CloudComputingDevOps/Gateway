@@ -1,23 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Inject, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiBody, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Inject, ParseIntPipe, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiParam, ApiBody, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { catchError } from 'rxjs';
 import { NATS_SERVICE } from '@/src/config';
 import { AreaPaginationDto, CreateAreaDto, UpdateAreaDto } from './dto';
-import { AuthGuard, PositionGuard } from '@/src/guards';
-import { Positions } from '@/src/decorators';
-import { PositionId } from '@/src/guards/enum/position-id.enum';
 
 @ApiTags('Areas')
-@ApiBearerAuth()
 @Controller('administrative-data/areas')
 export class AreasController {
   constructor(
     @Inject(NATS_SERVICE) private readonly client: ClientProxy,
   ) {}
 
-  @UseGuards(AuthGuard, PositionGuard)
-  @Positions(PositionId.HumanTalentAssistant, PositionId.HumanTalentLead)
   @Post('create-area')
   @ApiOperation({ summary: 'Crear un nueva área' })
   @ApiBody({ type: CreateAreaDto })
@@ -46,8 +40,6 @@ export class AreasController {
       .pipe(catchError((err) => { throw new RpcException(err); }));
   }
 
-  @UseGuards(AuthGuard, PositionGuard)
-  @Positions(PositionId.HumanTalentAssistant, PositionId.HumanTalentLead)
   @Patch('update-area/:id')
   @ApiOperation({ summary: 'Actualizar un área por ID' })
   @ApiParam({ name: 'id', description: 'ID del área', example: 1 })
@@ -60,8 +52,6 @@ export class AreasController {
   }
 
   @Delete('delete-area/:id')
-  @UseGuards(AuthGuard, PositionGuard)
-  @Positions(PositionId.HumanTalentAssistant, PositionId.HumanTalentLead)
   @ApiOperation({ summary: 'Eliminar un área por ID' })
   @ApiParam({ name: 'id', description: 'ID del área', example: 1 })
   @ApiResponse({ status: 200, description: 'Área eliminada exitosamente.' })

@@ -54,9 +54,8 @@ async function bootstrap() {
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Gateway API')
-    .setDescription('Documentación de la API del Gateway')
+    .setDescription('API pública del Gateway: no requiere token ni permisos por cargo.')
     .setVersion('1.0')
-    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerConfig);
