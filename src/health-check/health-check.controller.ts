@@ -5,7 +5,7 @@ export class HealthCheckController {
 
   @Get()
   healthCheck(){
-    return 'Gateway running after doing refactor of CI/CD and corrections!!'
+    return 'Gateway running before CI/CD Pipelines'
   }
 
 }
