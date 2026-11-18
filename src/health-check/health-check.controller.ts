@@ -5,7 +5,7 @@ export class HealthCheckController {
 
   @Get()
   healthCheck(){
-    return 'Gateway running'
+    return 'Gateway running by doing CI/CD'
   }
 
 }
